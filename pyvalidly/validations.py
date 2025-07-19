@@ -1,59 +1,26 @@
 import re
-from urllib.parse import urlparse
 
+def is_email(value):
+    if not isinstance(value, str):
+        return False
+    return re.match(r"[^@]+@[^@]+\.[^@]+", value) is not None
 
-def is_type(value, expected_type):
-    """Check if value is of the expected type."""
-    return isinstance(value, expected_type)
+def is_url(value):
+    if not isinstance(value, str):
+        return False
+    return re.match(r"https?://[^\s]+", value) is not None
 
+def min_value(min_val):
+    return lambda x: isinstance(x, (int, float)) and x >= min_val
 
-def coerce_type(value, target_type):
-    """Attempt to coerce a value to a target type."""
-    if target_type == bool:
-        if isinstance(value, str):
-            lowered = value.strip().lower()
-            if lowered in ("true", "1", "yes", "y"):
-                return True
-            elif lowered in ("false", "0", "no", "n"):
-                return False
-            else:
-                raise ValueError(f"Cannot coerce string '{value}' to bool")
-        return bool(value)
-    return target_type(value)
+def max_value(max_val):
+    return lambda x: isinstance(x, (int, float)) and x <= max_val
 
+def min_length(min_len):
+    return lambda x: hasattr(x, '__len__') and len(x) >= min_len
 
-# Built-in utility validations
-def is_email(value: str) -> bool:
-    """Validate if the value is a valid email address."""
-    return bool(re.match(r"[^@]+@[^@]+\.[^@]+", value))
+def max_length(max_len):
+    return lambda x: hasattr(x, '__len__') and len(x) <= max_len
 
-
-def is_url(value: str) -> bool:
-    """Validate if the value is a valid URL."""
-    parsed = urlparse(value)
-    return all([parsed.scheme, parsed.netloc])
-
-
-def matches_regex(value: str, pattern: str) -> bool:
-    """Check if a string matches the given regex pattern."""
-    return bool(re.match(pattern, value))
-
-
-def min_value(value, min_val):
-    """Ensure value is at least min_val."""
-    return value >= min_val
-
-
-def max_value(value, max_val):
-    """Ensure value is at most max_val."""
-    return value <= max_val
-
-
-def min_length(value, min_len):
-    """Ensure string/list length is at least min_len."""
-    return len(value) >= min_len
-
-
-def max_length(value, max_len):
-    """Ensure string/list length is at most max_len."""
-    return len(value) <= max_len
+def is_validation_func(obj):
+    return callable(obj)

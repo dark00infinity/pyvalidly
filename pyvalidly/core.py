@@ -1,57 +1,57 @@
-from .validations import is_type, coerce_type
 from .exceptions import ValidationError
+from .validations import is_validation_func
 
+def validate(data, rules, coerce=False):
+    validated = {}
 
-def validate(data: dict, schema: dict, *, coerce: bool = False):
-    """
-    Validate a dictionary `data` against a `schema`.
+    for field, rule in rules.items():
+        if field not in data:
+            raise ValidationError(f"Missing required field: {field}")
 
-    Args:
-        data (dict): The data to validate.
-        schema (dict): The validation schema. Keys map to:
-                       - a type (e.g., str, int)
-                       - or a tuple (type, custom_fn)
-        coerce (bool): If True, try to convert values to expected types.
+        value = data[field]
 
-    Raises:
-        ValidationError: If any validation fails.
-    """
-    errors = {}
+        try:
+            # Handle tuple (type, lambda)
+            if isinstance(rule, tuple):
+                expected_type, validator = rule
 
-    for key, rule in schema.items():
-        value = data.get(key)
+                # Coerce type if needed
+                if coerce:
+                    try:
+                        value = expected_type(value)
+                    except Exception:
+                        raise ValidationError(f"Field '{field}' coercion to {expected_type.__name__} failed")
+                elif not isinstance(value, expected_type):
+                    raise ValidationError(f"Field '{field}' must be of type {expected_type.__name__}")
 
-        # Determine expected type and optional custom function
-        if isinstance(rule, tuple):
-            expected_type, custom_fn = rule
-        else:
-            expected_type = rule
-            custom_fn = None
+                # Apply validator
+                if callable(validator) and not validator(value):
+                    raise ValidationError(f"Field '{field}' failed validation")
 
-        # Handle missing key
-        if key not in data:
-            errors[key] = "Missing field"
-            continue
+            elif isinstance(rule, type):
+                # Basic type rule
+                if coerce:
+                    try:
+                        value = rule(value)
+                    except Exception:
+                        raise ValidationError(f"Field '{field}' coercion to {rule.__name__} failed")
+                elif not isinstance(value, rule):
+                    raise ValidationError(f"Field '{field}' must be of type {rule.__name__}")
 
-        # Coerce value if enabled
-        if coerce:
-            try:
-                value = coerce_type(value, expected_type)
-                data[key] = value  # update coerced value in original dict
-            except Exception as e:
-                errors[key] = str(e)
-                continue
+            elif callable(rule):
+                # Custom validation function (e.g., is_email)
+                if not rule(value):
+                    raise ValidationError(f"Field '{field}' failed validation")
 
-        # Type check
-        if not is_type(value, expected_type):
-            errors[key] = f"Expected {expected_type.__name__}, got {type(value).__name__}"
-            continue
+            else:
+                raise ValidationError(f"Unsupported rule for field '{field}'")
 
-        # Custom validation
-        if custom_fn and not custom_fn(value):
-            errors[key] = "Custom validation failed"
+        except ValidationError:
+            raise
+        except Exception as e:
+            raise ValidationError(f"Validation error on field '{field}': {str(e)}")
 
-    if errors:
-        raise ValidationError("Validation failed", errors)
+        # Store coerced or original value
+        validated[field] = value
 
-    return True
+    return validated
