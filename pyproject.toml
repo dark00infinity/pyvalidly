@@ -1,6 +1,6 @@
 [project]
 name = "pyvalidly"
-version = "0.0.1"
+version = "1.0.0"
 description = "Lightweight, zero-dependency Python library for validating dictionaries with optional coercion and custom rules"
 authors = [
     { name = "Deepak singh", email = "deepaksingh20899@gmail.com" }
