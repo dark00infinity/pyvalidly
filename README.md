@@ -178,7 +178,6 @@ MIT License
 Pull requests, suggestions, and stars are welcome!
 If this helped you, consider supporting the project.
 
-
 ## Contact
 
 Made with love by Deepak singh — https://github.com/dark00infinity
