@@ -149,7 +149,7 @@ def validate(
     data: Dict[str, Any],
     schema: Dict[str, FieldSchema],
     *,
-    coerce: bool = False,  # global flag (old style)
+    coerce: bool = False,
 ) -> Dict[str, Any]:
     """
     Validate `data` against `schema`.
