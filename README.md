@@ -9,10 +9,14 @@ Inspired by Pydantic's power but built for simplicity, speed, and flexibility �
 ## Features
 
 - Simple schema-based dictionary validation  
-- Optional type coercion (e.g. str → int)  
-- Custom validators (e.g. `is_email`, `is_positive`)  
-- Optional and nullable fields  
-- No external dependencies
+- Type validation – int, str, float, list, dict, custom classes.
+- Coercion – Automatically convert types when possible.
+- Default values – Fill missing fields with defaults.
+- Conditional validation – Skip validation based on another field.
+- Custom validation functions – Pass any callable returning True/False.
+- Helper functions – is_email, is_url, min_value, max_value, min_length, max_length.
+- Custom error messages – Per-field validation errors.
+- Old-style and new-style schemas – Flexible for migration.
 
 ---
 
@@ -23,55 +27,136 @@ pip install pyvalidly
 ```
 
 
-## Usage
-### Basic Validation 
+## Basic Usage
+### Old-style Schema
 ```
-from pyvalidly import validate
+from pyvalidly import validate, is_email
 
 schema = {
-    "name": str,
-    "age": int
+    "name": (str,),
+    "age": (int, lambda x: x > 18),
+    "email": (str, is_email)
 }
 
 data = {
-    "name": "Alice",
-    "age": 25
+    "name": "John",
+    "age": 25,
+    "email": "john@example.com"
 }
 
-validate(data, schema)  # Returns True if valid
+validated = validate(schema, data)
+print(validated)
+# {'name': 'John', 'age': 25, 'email': 'john@example.com'}
+
 ```
 
-### With optional and nullable fields
+### New-style Schema
+
+```
+from pyvalidly import validate, is_email, min_value
+
+schema = {
+    "name": {"type": str, "required": True},
+    "age": {"type": int, "coerce": True, "rules": [min_value(18)]},
+    "email": {"type": str, "rules": [is_email]}
+}
+
+data = {
+    "name": "John",
+    "age": "42",
+    "email": "john@example.com"
+}
+
+validated = validate(schema, data)
+print(validated)
+# {'name': 'John', 'age': 42, 'email': 'john@example.com'}
+
+```
+
+## Advanced Features
+### 1. Type Coercion
+```
+schema = {
+    "age": {"type": int, "coerce": True}
+}
+data = {"age": "30"}
+
+print(validate(schema, data))
+# {'age': 30}
+
+```
+
+### 2. Default Values
 
 ```
 schema = {
-    "name": str,
-    "nickname": {"type": str, "optional": True},
-    "bio": {"type": str, "nullable": True}
+    "name": {"type": str, "default": "Anonymous"}
 }
+data = {}
+
+print(validate(schema, data))
+# {'name': 'Anonymous'}
+
 ```
 
-### Custom validators
-
-```
-from pyvalidly import is_email
-
-schema = {
-    "email": is_email
-}
-```
-
-### Type Coercion
+### 3. Conditional Validation
 
 ```
 schema = {
-    "age": int
+    "is_member": {"type": bool, "required": True},
+    "membership_id": {
+        "type": str,
+        "required": True,
+        "condition": lambda data: data.get("is_member") is True
+    }
 }
 
-data = {"age": "30"}  # str input
+data = {"is_member": False}
+print(validate(schema, data))
+# {'is_member': False}
 
-validate(data, schema, coercion=True)  # Will coerce "30" → 30
 ```
+
+### 4. Custom Error Messages
+
+```
+schema = {
+    "age": {
+        "type": int,
+        "rules": [lambda x: x >= 18],
+        "error": "Must be at least 18 years old"
+    }
+}
+data = {"age": 10}
+
+from pyvalidly.exceptions import ValidationError
+try:
+    validate(schema, data)
+except ValidationError as e:
+    print(e)
+# Must be at least 18 years old
+
+```
+
+### 5. Built-in Helpers
+
+```
+from pyvalidly import is_email, is_url, min_value, max_value, min_length, max_length
+
+print(is_email("test@example.com")) # True
+print(is_url("http://example.com")) # True
+print(min_value(10)(15)) # True
+print(max_length(5)("hello")) # True
+
+```
+
+## Schema Styles
+
+- Old-style tuple rules : 
+Each field maps to a tuple of rules: (type, func, func, ...)
+
+- New-style dict rules :
+{ "type": str, "required": True, "default": "X", "rules": [func], "coerce": True, "condition": func }
 
 ## Project Structure
 ```
@@ -92,7 +177,6 @@ MIT License
 
 Pull requests, suggestions, and stars are welcome!
 If this helped you, consider supporting the project.
-
 
 ## Contact
 
