@@ -145,15 +145,26 @@ def _validate_new_style_field(
     return value
 
 
-def validate(data: dict, schema: dict) -> dict:
+def validate(data: dict, schema: dict, *, coerce: bool = False) -> dict:
+    """
+    Validate data against schema (both old-style and new-style).
+
+    Args:
+        data (dict): Input data
+        schema (dict): Validation schema
+        coerce (bool): If True, coerce values to expected type in old-style schemas.
+                       For new-style, prefer per-field "coerce" option.
+    """
     errors: Dict[str, str] = {}
     validated_data: Dict[str, Any] = {}
 
     for field, rules in schema.items():
-        # old-style field
+        # ----- OLD-STYLE FIELD -----
         if not isinstance(rules, dict):
             try:
-                validated_data[field] = _validate_old_style_field(field, rules, data.get(field), coerce=False)
+                validated_data[field] = _validate_old_style_field(
+                    field, rules, data.get(field), coerce=coerce
+                )
             except ValidationError as e:
                 errors[field] = str(e)
             continue
@@ -191,3 +202,4 @@ def validate(data: dict, schema: dict) -> dict:
         raise ValidationError(errors)
 
     return validated_data
+
