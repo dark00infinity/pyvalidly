@@ -33,7 +33,7 @@ pip install pyvalidly
 from pyvalidly import validate, is_email
 
 schema = {
-    "name": (str,),
+    "name": str, #(str,),
     "age": (int, lambda x: x > 18),
     "email": (str, is_email)
 }
@@ -44,9 +44,10 @@ data = {
     "email": "john@example.com"
 }
 
-validated = validate(schema, data)
+validated = validate(data, schema)
 print(validated)
 # {'name': 'John', 'age': 25, 'email': 'john@example.com'}
+
 
 ```
 
@@ -67,7 +68,7 @@ data = {
     "email": "john@example.com"
 }
 
-validated = validate(schema, data)
+validated = validate(data,schema)
 print(validated)
 # {'name': 'John', 'age': 42, 'email': 'john@example.com'}
 
@@ -76,12 +77,14 @@ print(validated)
 ## Advanced Features
 ### 1. Type Coercion
 ```
+from pyvalidly import validate, is_email, min_value
+
 schema = {
     "age": {"type": int, "coerce": True}
 }
 data = {"age": "30"}
 
-print(validate(schema, data))
+print(validate(data,schema))
 # {'age': 30}
 
 ```
@@ -89,12 +92,14 @@ print(validate(schema, data))
 ### 2. Default Values
 
 ```
+from pyvalidly import validate, is_email, min_value
+
 schema = {
     "name": {"type": str, "default": "Anonymous"}
 }
 data = {}
 
-print(validate(schema, data))
+print(validate(data,schema))
 # {'name': 'Anonymous'}
 
 ```
@@ -102,6 +107,8 @@ print(validate(schema, data))
 ### 3. Conditional Validation
 
 ```
+from pyvalidly import validate, is_email, min_value
+
 schema = {
     "is_member": {"type": bool, "required": True},
     "membership_id": {
@@ -112,7 +119,7 @@ schema = {
 }
 
 data = {"is_member": False}
-print(validate(schema, data))
+print(validate(data, schema))
 # {'is_member': False}
 
 ```
@@ -120,6 +127,7 @@ print(validate(schema, data))
 ### 4. Custom Error Messages
 
 ```
+from pyvalidly import validate, is_email, min_value
 schema = {
     "age": {
         "type": int,
@@ -131,7 +139,7 @@ data = {"age": 10}
 
 from pyvalidly.exceptions import ValidationError
 try:
-    validate(schema, data)
+    print(validate(data, schema))
 except ValidationError as e:
     print(e)
 # Must be at least 18 years old
